@@ -1,73 +1,175 @@
 #include "monty.h"
-#include <stdlib.h>
 
 /**
- * my_readline - func that reads a line from the file line getline function
- * @buff: a pointer to a buffer containing line to be read
- * @size_buff: pointer to a size of a buff
- * @stream: file stream to be read
+ * process_file - Process the instructions from a file
+ * @file: Pointer to the file to process
+ * @stack: Double pointer to the top of the stack
  *
- * Return: returns the  number of character read,
- * otherwise returns -1
+ * Description: Reads the file line by line, tokenizes each line to extract
+ * the opcode, creates an instruction, and executes it.
  */
-
-int my_readline(char **buff, size_t *size_buff, FILE *stream)
+void process_file(FILE *file, stack_t **stack)
 {
-	char *new_buff;
-	int c;
-	int len = 0;
-	size_t buff_size = 0;
+	char *line = NULL;
+	size_t len = 0;
+	int line_number = 1;
 
-	if (!buff || !size_buff || !stream)
-		return (-1);
-	/* reading the character one by one */
-	while ((c = fgetc(stream)) != EOF)
+	while (my_getline(&line, &len, file) != -1)
 	{
-		if (len >= (int) (*size_buff) - 1)
+		char *opcode = strtok(line, " \t\n");
+
+		if (opcode)
 		{
-			buff_size += 128;
-			new_buff = realloc(*buff, buff_size);
+			instruction_t *instruction = create_instruction(opcode, NULL);
 
-			if (!new_buff)
-				return (-1);
-			*buff = new_buff;
+			if (!instruction)
+			{
+				fprintf(stderr, "Error: Unknown instruction at line %d: %s\n",
+						line_number, opcode);
+				free(line);
+				exit(EXIT_FAILURE);
+			}
 
-			*size_buff = buff_size; /* updating the size*/
+			execute_instruction(instruction, stack, line_number);
 
+			free(instruction);
 		}
-		(*buff)[len++] = (char)c;
 
-		if (c == '\n')
-			break;
+		line_number++;
 	}
-	/* if no character read */
-	if (len == 0)
-		return (-1);
-	/* null-terminate the string */
-	(*buff)[len] = '\0';
 
-	return (len);/*returning the number of char read */
+	free(line);
 }
 
 /**
- * execute_instruct - it executes the instruction by calling a function
- * @instruction: an instruction or opcode to be executed.
- * @stack: a double pointer to the top of the stack
- * @line_number: number of line where instruction is .
+ * create_instruction - Creates an instruction structure
+ * @opcode: The opcode string
+ * @arg: The argument for the instruction (currently not used)
  *
- * Description: it executes a function called based on the instruction.
+ * Return: A pointer to the newly created instruction structure
+ *
+ * Description: Allocates memory for a new instruction structure, sets the
+ * opcode field to the provided opcode string, and initializes the arg field
+ * to NULL.
  */
-
-void execute_instruct(instruction_t *instruction, stack_t **stack, size_t line_number)
+instruction_t *create_instruction(char *opcode, void *arg)
 {
-	/* if the opcode is "push", call the push function*/
-	if (strcmp(instruction->opcode, "push") == 0)
-		push(stack, instruction->arg);
+	instruction_t *instruction = malloc(sizeof(instruction_t));
 
-	/* if the opcode is "pall", call the pall function*/
-	if (strcmp(instruction->opcode, "pall") == 0)
+	if (!instruction)
 	{
-		pall(stack);
+		fprintf(stderr, "Error: malloc failed\n");
+		exit(EXIT_FAILURE);
 	}
-	(void)line_number;
+
+	instruction->opcode = my_strdup(opcode);
+	instruction->arg = arg;
+
+	return (instruction);
 }
+
+/**
+ * execute_instruction - Executes an instruction
+ * @instruction: Pointer to the instruction to execute
+ * @stack: Double pointer to the top of the stack
+ * @line_number: The line number of the instruction
+ *
+ * Description: Executes the specified instruction by calling the corresponding
+ * function based on the opcode.
+ */
+void execute_instruction(instruction_t *instruction, stack_t **stack,
+		unsigned int line_number)
+{
+	if (strcmp(instruction->opcode, "push") == 0)
+	{
+		push(stack, instruction->arg);
+	}
+	else if (strcmp(instruction->opcode, "pint") == 0)
+	{
+		pint(stack, line_number);
+	}
+	else if (strcmp(instruction->opcode, "pop") == 0)
+	{
+		pop(stack, line_number);
+	}
+	else if (strcmp(instruction->opcode, "swap") == 0)
+	{
+		swap(stack, line_number);
+	}
+	else if (strcmp(instruction->opcode, "add") == 0)
+	{
+		add(stack, line_number);
+	}
+	else if (strcmp(instruction->opcode, "nop") == 0)
+	{
+		nop(stack, line_number);
+	}
+	else if (strcmp(instruction->opcode, "sub") == 0)
+	{
+		sub(stack, line_number);
+	}
+	else
+	{
+		fprintf(stderr, "Error: Unknown instruction: %s\n", instruction->opcode);
+		free(instruction->opcode);
+		free(instruction);
+		exit(EXIT_FAILURE);
+	}
+}
+
+/**
+ * push - Pushes an element onto the stack
+ * @stack: Double pointer to the top of the stack
+ * @arg: The argument to push
+ *
+ * Description: Creates a new node with the argument as its value and
+ * pushes it onto the stack.
+ */
+void push(stack_t **stack, char *arg)
+{
+	stack_t *new_node = malloc(sizeof(stack_t));
+
+	if (!new_node)
+	{
+		fprintf(stderr, "Error: malloc failed\n");
+		exit(EXIT_FAILURE);
+	}
+
+	new_node->n = atoi(arg);
+	new_node->prev = NULL;
+
+	if (*stack)
+	{
+		(*stack)->prev = new_node;
+		new_node->next = *stack;
+	}
+	else
+	{
+		new_node->next = NULL;
+	}
+
+	*stack = new_node;
+}
+
+/**
+ * pint - Prints the value at the top of the stack
+ * @stack: Double pointer to the top of the stack
+ * @line_number: The line number of the instruction
+ *
+ * Description: Prints the value at the top of the stack. If the stack is
+ * empty, an error message is printed and the program exits
+ * with a failure status.
+ */
+void pint(stack_t **stack, unsigned int line_number)
+{
+	if (*stack)
+	{
+		printf("%d\n", (*stack)->n);
+	}
+	else
+	{
+		fprintf(stderr, "Error: L%d: can't pint, stack empty\n", line_number);
+		exit(EXIT_FAILURE);
+	}
+}
+

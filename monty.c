@@ -1,13 +1,16 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "monty.h"
 
 /**
- * main - Entry gate of the monty bytecode interpreter
- * @argc: number of arguments to inputed
- * @argv: an array of the arguments
+ * main - Entry point of the Monty interpreter
+ * @argc: The number of command-line arguments
+ * @argv: An array of command-line argument strings
  *
- * Return: EXIT_SUCCESS if successful, otherwise EXIT_FAILURES
+ * Return: EXIT_SUCCESS if successful, otherwise EXIT_FAILURE
  */
-
 int main(int argc, char *argv[])
 {
 	FILE *file;
@@ -20,13 +23,15 @@ int main(int argc, char *argv[])
 	}
 
 	file = fopen(argv[1], "r");
-	if (file == NULL)
+	if (!file)
 	{
 		fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
 		return (EXIT_FAILURE);
 	}
+
 	process_file(file, &stack);
 
 	fclose(file);
 	return (EXIT_SUCCESS);
 }
+
