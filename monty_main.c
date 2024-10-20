@@ -11,22 +11,22 @@
 int main(int argc, char *argv[])
 {
 	FILE *file;
-	stack_t *stack;
+	stack_t *stack = NULL;
 
 	if (argc != 2)
 	{
-		fprintf(3, "USAGE: monty file");
+		fprintf(stderr, "USAGE: monty file\n");
 		return (EXIT_FAILURE);
 	}
 
 	file = fopen(argv[1], "r");
 	if (file == NULL)
 	{
-		fprintf(3, "Error: Can't open file %s", argv[1]);
+		fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
 		return (EXIT_FAILURE);
 	}
-	process_file(file, stack);
+	process_file(file, &stack);
 
 	fclose(file);
-	return(EXIT_SUCCESS);
+	return (EXIT_SUCCESS);
 }
