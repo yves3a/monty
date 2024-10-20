@@ -1,5 +1,11 @@
 #include "monty.h"
 
+char *get_int(int num);
+unsigned int _abs(int);
+int get_numbase_len(unsigned int num, unsigned int base);
+void fill_numbase_buff(unsigned int num, unsigned int base,
+		       char *buff, int buff_size);
+
 /**
  * get_int - gets a character pointer to new string containing int
  * @num: number to convert to string

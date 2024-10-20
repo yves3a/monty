@@ -1,6 +1,8 @@
 #ifndef MONTY_H
 #define MONTY_H
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
